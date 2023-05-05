@@ -6,7 +6,7 @@ import { useEffect,useState,useContext } from 'react'
 import axios from 'axios'
 import { tabelData, Sekeleton } from '../components/components.jsx'
 import { ErrorPage } from '../components/errorPage.jsx'
-import { DataContext } from '../components/dataProvider.jsx'
+import { DataContext,CheckedItemsContext } from '../components/dataProvider.jsx'
 
 function Tabel() {
   const [data, setData] = useContext(DataContext);
@@ -17,7 +17,7 @@ function Tabel() {
   const {tabelId} = useParams();
   const navigate = useNavigate();
 
-  const [checkedItems, setCheckedItems] = useState([]);
+  const [checkedItems, setCheckedItems] = useContext(CheckedItemsContext);
 
   useEffect(() => {
     const url = "https://seki-statx-api.vercel.app/"+tabelId
