@@ -17,8 +17,7 @@ function Tabel() {
   const {tabelId} = useParams();
   const navigate = useNavigate();
 
-  
-  
+  const [checkedItems, setCheckedItems] = useState([]);
 
   useEffect(() => {
     const url = "https://seki-statx-api.vercel.app/"+tabelId
@@ -52,6 +51,19 @@ function Tabel() {
     )
   }
 
+  function handleCheckbox(event){
+    if (event.target.checked) {
+      setCheckedItems(prevItems => [...prevItems, event.target.dataset.key]);
+    } else {
+      setCheckedItems(prevItems => prevItems.filter(item => item !== event.target.dataset.key));
+    }
+    console.log(checkedItems)
+  }
+
+  function handleClick(event){
+    console.log(event.target.dataset.key)
+  }
+
   return (
     <Layout>
       <div>
@@ -59,14 +71,47 @@ function Tabel() {
           <div className='space-y-8'>
             <div className='flex justify-between'> 
               <p className='text-xl font-bold basis-2/3 leading-8'>{tabelData.find(item=>item.id==tabelId).title }</p>
-              <Link className='btn btn-primary btn-sm ' to={'/stats/'}>Lihat grafik</Link>
+
+              <input type="checkbox" id="drawer-right" className="drawer-toggle" />
+
+              <label htmlFor="drawer-right" className="btn btn-primary">Buat Grafik</label>
+              <label className="overlay " htmlFor="drawer-right"></label>
+              <div className="drawer drawer-right ">
+                <div className="drawer-content pt-10 flex flex-col h-full ">
+                  <label htmlFor="drawer-right" className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</label>
+                  <div>
+                    <h2 className="text-xl font-medium">Pilih parameter</h2>
+                    <div className='pt-8 flex flex-col gap-4 max-h-[80vh] overflow-hidden hover:overflow-auto'>
+                      {data.index.map((item,index)=>{
+                      return(
+                        <div>
+                          <label className="flex cursor-pointer gap-2 ">
+                            <input onClick={handleCheckbox} data-key={index} type="checkbox" className="checkbox" />
+                            <span className='text-xs'>{item}</span>
+                          </label>
+                        </div>
+                      )
+                      
+                    })}
+                      
+                      
+                    </div>
+                    
+                  </div>
+                  <div className="h-full flex flex-row justify-end items-end gap-2">
+                    <Link className='btn btn-primary ' to={'/stats/'}>Buat grafik</Link>
+                    
+                  </div>
+                </div>
+              </div>
+              
             </div>
             
-            <div class="flex w-full overflow-x-auto max-h-96 overflow-y-auto">
+            <div class="flex w-full overflow-x-auto max-h-[70vh] overflow-y-auto">
               <table class="table  table-zebra table-compact">
-                <thead className='sticky top-0 '>
+                <thead className='sticky top-0 z-20'>
                   <tr className=''>
-                    <th className='sticky left-0 z-20' rowSpan={2}>Keterangan</th>
+                    <th className='sticky left-0 ' rowSpan={2}>Keterangan</th>
                     {data && data.columns && (
                       <>
                         {Array.from(Array(Math.ceil(data.columns.length / 12)).keys()).map((index) => {
@@ -91,7 +136,7 @@ function Tabel() {
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className=''>
                   {data.index.map((item,index)=>{
                     return(
                       <tr key={index}>
@@ -108,6 +153,8 @@ function Tabel() {
                 </tbody>
               </table>
             </div>
+
+            
           </div>
         )}
       </div>
