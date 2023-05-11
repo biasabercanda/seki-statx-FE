@@ -78,7 +78,7 @@ export function Sekeleton(){
   return(
     <div className='space-y-8'>
           <div class="skeleton w-128 h-8 rounded-md"></div>
-          <table class="table w-full max-w-4xl">
+          <table class="table w-full">
             <thead>
               <tr>
                 <th><div class="skeleton h-5 rounded-md"></div></th>

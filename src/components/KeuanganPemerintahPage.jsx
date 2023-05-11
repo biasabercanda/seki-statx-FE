@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import {Item} from './components.jsx'
+import {Item,tabelData} from './components.jsx'
 
 function KeuanganPemerintahPage() {
   const [count, setCount] = useState(0)
