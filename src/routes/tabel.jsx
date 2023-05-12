@@ -15,6 +15,7 @@ function Tabel() {
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [type, setType] =  useState(12)
 
   const {tabelId} = useParams();
   const navigate = useNavigate();
@@ -25,10 +26,19 @@ function Tabel() {
     const url = "https://seki-statx-api.vercel.app/"+tabelId
     axios.get(url)
       .then(response => {
-        setData(JSON.parse(response.data));
-        console.log(JSON.parse(response.data))
+        let parsedData = JSON.parse(response.data)
+        setData(parsedData);
+        console.log(parsedData)
+
+        if (parsedData.columns[0].includes("Jan")) {
+          setType(12);
+        } else {
+          setType(4);
+        }  
+
         setLoading(false)
         setLoaded(true)
+        
       })
       .catch(error => {
         console.error(error);
@@ -52,6 +62,8 @@ function Tabel() {
       
     )
   }
+
+  
 
   function handleCheckbox(event){
     if (event.target.checked) {
@@ -81,30 +93,34 @@ function Tabel() {
     return Math.floor(dateObj.getTime());
   }
 
+  function getQuarterTimestamp(quarterString) {
+    var year = quarterString.split('-')[0];
+    var quarter = quarterString.split('-')[1].slice(1);
+    var month = (parseInt(quarter) - 1) * 3 + 1;
+    return new Date(year, month - 1, 1).getTime();
+  }
+  
+
+  function timestamp(column){
+    let data
+    if(column.includes('-Q')){
+      data = getQuarterTimestamp(column)
+    }
+    else{
+      data = convert(column)
+    }
+
+    return data
+  }
+
   const seriesData = checkedItems.map((key) => {
     return {
       name: `${data.index[key]}`,
       data: data.data[key].map((elem, i) => {
-        return [convert(data.columns[i]), elem];
+        return [timestamp(data.columns[i]), elem];
       }),
     };
   });
-
-  function updateChart() {
-  
-    const newSeriesData = checkedItems.map((index) => {
-      return {
-        name: `Series ${index}`,
-        data: data.data[index].map((elem, i) => {
-          return [convert(data.columns[i]), elem];
-        }),
-      };
-    });
-  
-    chart.update({
-      series: newSeriesData,
-    });
-  }
   
 
   const options = {
@@ -113,7 +129,7 @@ function Tabel() {
     },
         
     rangeSelector: {
-        selected: 1
+        selected: 0
     },
     
     series: seriesData,
@@ -155,13 +171,13 @@ function Tabel() {
               <table class="table  table-zebra table-compact">
                 <thead className='sticky top-0 z-10'>
                   <tr className=''>
-                    <th className='sticky left-0 z-20' rowSpan={2}>Keterangan</th>
+                    <th className='sticky left-0 z-20 min-w-[320px]' rowSpan={2}>Keterangan</th>
                     {data && data.columns && (
                       <>
-                        {Array.from(Array(Math.ceil(data.columns.length / 12)).keys()).map((index) => {
+                        {Array.from(Array(Math.ceil(data.columns.length / type)).keys()).map((index) => {
                           const year = 2010 + index;
                           return (
-                            <th className='border z-0 left-[320px] sticky' key={year} colSpan={12}>{year}</th>
+                            <th className='border z-0 left-[320px] sticky' key={year} colSpan={type}>{year}</th>
                           )
                         })}
                       </>
@@ -245,6 +261,8 @@ function Tabel() {
                   
               />
             </div>
+
+            <button className='btn' onClick={()=>{console.log(type)}}>tes</button>
             
             
             

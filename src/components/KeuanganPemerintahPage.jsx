@@ -3,12 +3,7 @@ import {Item,tabelData} from './components.jsx'
 
 function KeuanganPemerintahPage() {
   const [count, setCount] = useState(0)
-  const keuanganPemerintah = [
-    {id:'4_1',title:'Pendapatan Pemerintah'},
-    {id:'4_3',title:'Belanja Pemerintah'},
-    {id:'4_4',title:'Pembiayaan Pemerintah'},
-    {id:'4_4',title:'Posisi Surat Berharga Negara (SBN)'},
-  ]
+  const keuanganPemerintah = tabelData.filter(item=>item.category=='keuangan pemerintah')
 
 
   return (

@@ -1,15 +1,13 @@
 import { useState } from 'react'
-import {Item} from './components.jsx'
+import {Item,tabelData} from './components.jsx'
 
 function EksternalPage() {
   const [count, setCount] = useState(0)
-  const uangDanBank = [
-    {id:'1_1',title:'Uang Beredar dan Faktor-Faktor yang Mempengaruhinya'},
-  ]
+  const neraca = tabelData.filter(item=>item.category=='eksternal')
 
-  const  nonBank = [
-    {id:'2_1',title:'Neraca Perusahaan Pembiayaan'},
-  ]
+  const  pinjaman = tabelData.filter(item=>item.category=='pinjaman')
+
+  const  indikator = tabelData.filter(item=>item.category=='indikator')
 
   return (
       <div className=''>
@@ -17,7 +15,7 @@ function EksternalPage() {
           <div className='mt-8'>
             <p className='font-semibold'>Neraca Pembayaran</p>
             <div className='py-4 flex flex-col gap-4'>
-              <Item items={uangDanBank}></Item>            
+              <Item items={neraca}></Item>            
             </div>
             
           </div>
@@ -25,7 +23,7 @@ function EksternalPage() {
           <div className='mt-8'>
             <p className='font-semibold'>Pinjaman Luar Negri</p>
             <div className='py-4 flex flex-col gap-4'>
-              <Item items={nonBank}></Item>            
+              <Item items={pinjaman}></Item>            
             </div>
             
           </div>
@@ -33,7 +31,7 @@ function EksternalPage() {
           <div className='mt-8'>
             <p className='font-semibold'>Indikator Ekonomi dan Moneter Indonesia</p>
             <div className='py-4 flex flex-col gap-4'>
-              <Item items={nonBank}></Item>            
+              <Item items={indikator}></Item>            
             </div>
             
           </div>
