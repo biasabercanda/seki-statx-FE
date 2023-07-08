@@ -29,10 +29,6 @@ const router = createBrowserRouter([
     element: <Moneter />,
   },
   {
-    path: "keuangan-pemerintah",
-    element: <KeuanganPemerintah />,
-  },
-  {
     path: "riil",
     element: <Riil />,
   },
@@ -46,11 +42,6 @@ const router = createBrowserRouter([
     element: <Tabel/>
   },
   {
-    path: "stats",
-    
-    element: <StatPage/>
-  },
-  {
     path:"*",
     element: <ErrorPage/>
   }
@@ -60,7 +51,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <DataProvider>
-      <RouterProvider router={router}>
+      <RouterProvider Classname="ripple-light-theme" router={router}>
       
       </RouterProvider>
     </DataProvider>

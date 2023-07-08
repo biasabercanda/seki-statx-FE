@@ -7,6 +7,7 @@ import { tabelData, Sekeleton } from '../components/components.jsx'
 import { ErrorPage } from '../components/errorPage.jsx'
 import { DataContext} from '../components/dataProvider.jsx'
 import Highcharts from 'highcharts/highstock'
+import HCExporting from 'highcharts/modules/exporting';
 import HighchartsReact from 'highcharts-react-official'
 import myTheme from '../components/theme';
 import { calculateStatistics } from '../components/statFunction.js'
@@ -19,6 +20,7 @@ function Tabel() {
   const [type, setType] =  useState(12)
   const [chartType, setChartType] = useState([])
   const [activeTab, setActiveTab] = useState('tab-6');
+  const [yearList,setYearList] = useState([])
 
   const {tabelId} = useParams();
   const navigate = useNavigate();
@@ -26,8 +28,8 @@ function Tabel() {
   //chart
   const [checkedItems, setCheckedItems] = useState([]);
   
-  const [forecastItems,setForecaastItems] = useState([])
-  const [corelattionItems,setCorrelationItems] = useState([])
+  
+  
 
   //basic statistic
   const [statTitle,setStatTilte] = useState('[Pilih Parameter Lebih Dulu]')
@@ -42,6 +44,24 @@ function Tabel() {
     minValue: '',
   });
   const [statCheck, setStatCheck] = useState()
+  const [statFrom,setStatFrom] = useState(2010)
+  const [statTo, setStatTo] = useState(2010)
+
+  //corelation
+  const [independetVar,setIndependentVar] = useState()
+  const [independetCheck,setIndependentCheck] = useState([])
+  const [dependetVar,setDependentVar] = useState()
+  const [dependetCheck,setDependentCheck] = useState()
+  const [yearFrom, setYearFrom] = useState(2010)
+  const [yearTo, setYearTo] = useState(2010)
+  const [corelationPlot, setCorelationPlot]=useState(null)
+  const [corelationLoad, setCorelationLoad] = useState(true)
+
+  //forecast
+  const [forecastCheck,setForecastCheck] = useState()
+  const [forecastItems,setForecaastItems] = useState([])
+  const [forecastLoad, setForecastLoad] = useState(true)
+  const [forecastPlot, setForecastPlot]=useState(null)
 
   useEffect(() => {
     const url = "https://seki-statx-api.vercel.app/"+tabelId
@@ -84,7 +104,7 @@ function Tabel() {
     )
   }
 
-  
+  HCExporting(Highcharts);
 
   function handleCheckbox(event){
     if (event.target.checked) {
@@ -108,9 +128,14 @@ function Tabel() {
   }
 
   function handleStatCheck(){
-    const stat = calculateStatistics(data.data[statCheck])
+    const base = 2010
+
+    const f = (statFrom-base)*type
+    const t = f+type+(statTo-statFrom)*type
+
+    const stat = calculateStatistics(data.data[statCheck].slice(f,t))
+
     setStatItems(stat)
-    setStatTilte(data.index[statCheck])
   }
 
   function handleClick(event){
@@ -166,7 +191,7 @@ function Tabel() {
 
   const options = {
     chart:{
-        height: 600
+        
     },
         
     rangeSelector: {
@@ -236,6 +261,199 @@ function Tabel() {
   //HighchartsTheme(Highcharts)
   Highcharts.setOptions(myTheme)
 
+  let yearArray = []
+
+  //forecast function
+  function handleForecastCheck(event){
+    setForecastCheck(event.target.dataset.key)
+  }
+
+  function handleForecastVar(){
+    setForecaastItems(forecastCheck)
+    setForecastLoad(false)
+    axios.post('https://seki-statx-sklearn.vercel.app/forecast',{
+      "data":data.data[forecastCheck]
+    })
+    .then(function(response){
+      const resJSON = JSON.parse(response["data"])
+      setForecastLoad(true)
+      setForecastPlot(resJSON)
+      
+    })
+    .catch(function(error){
+      console.log(error)
+    })
+  }
+
+  const forecastData = forecastPlot? forecastPlot.x.map((elem,index)=>{
+    return [elem,forecastPlot.y[index]]
+  }) : []
+
+  const forecastReg = forecastPlot ? forecastPlot.x.map((elem,index)=>{
+    return [elem,forecastPlot.X[index]]
+  }) : []
+
+  const forecastPred = forecastPlot ? forecastPlot.future_x.map((elem,index)=>{
+    return [elem[0],forecastPlot.predicted_y[index]]
+  }) : []
+
+  const forecastLine = forecastPlot ? `Regression Line:  Y = ${forecastPlot.slope.toFixed(2)} X+${forecastPlot.intercept.toFixed(2)}` : []
+
+  const optionsForecast = {
+    chart:{
+      
+      marginTop: 48
+    },
+    title:{
+      text : undefined
+    },
+         
+    series: [{
+      type: 'scatter',
+      name: 'Data',
+      data: forecastData,
+      marker: {
+          radius: 4
+      }
+    },
+    {
+      type: 'line',
+      name: forecastLine,
+      data: forecastReg,
+      lineWidth : 3
+    },
+    {
+      type: 'scatter',
+      name: 'Predicted Value',
+      data: forecastPred,
+      marker: {
+        radius: 4
+      }
+    }
+  ],
+  legend:{
+    enabled:false
+  },
+  exporting: {
+    buttons: {
+      contextButton: {
+        // Customize the position of the export button
+        align: 'right', // Available options: 'left', 'center', 'right'
+        verticalAlign: 'top', // Available options: 'top', 'middle', 'bottom'
+        x: 0, // Adjust the horizontal position
+        y: 0, // Adjust the vertical position
+      },
+    },
+  },
+    
+  }
+
+  //corelation function
+  function handleIndependent(event){
+    if (event.target.checked) {
+      setIndependentCheck(prevItems => [...prevItems, event.target.dataset.key]);
+    } else {
+      if(checkedItems.length==1){
+        setIndependentCheck([])
+      }else{
+        setIndependentCheck(prevItems => prevItems.filter(item => item !== event.target.dataset.key));
+      }
+    }
+    
+  }
+
+  function handleIndependentItems(){
+    setIndependentVar(independetCheck)
+  }
+
+  function handleDependent(event){
+    setDependentCheck(event.target.dataset.key)
+  }
+
+  function handleDependentItems(){
+    setDependentVar(dependetCheck)
+  }
+
+  function handleYearFrom(event){
+    setYearFrom(parseInt(event.target.dataset.key))
+  }
+
+  function handleYearTo(event){
+    setYearTo(parseInt(event.target.dataset.key))
+  }
+
+  function handleStatFrom(event){
+    setStatFrom(parseInt(event.target.dataset.key))
+  }
+
+  function handleStatTo(event){
+    setStatTo(parseInt(event.target.dataset.key))
+  }
+
+  function handleHasil(){
+    const body = {
+      'data_type':type,
+      'year_from':yearFrom,
+      'year_to':yearTo,
+      'data1':independetVar.map(function(index){return data.data[index]}),
+      'data2':data.data[dependetVar]
+    }
+
+
+    setCorelationLoad(false)
+    axios.post('https://seki-statx-sklearn.vercel.app/corelation',body)
+    .then(function(response){
+      const resJSON = JSON.parse(response["data"])
+      console.log(resJSON)
+      setCorelationPlot(resJSON)
+      setCorelationLoad(true)
+    })
+    .catch(function(error){
+      console.log(error)
+    })
+  }
+
+  const corelationData = corelationPlot ? corelationPlot.y.map((elem,index)=>{
+    console.log(elem)
+    return [elem,corelationPlot.X[index]]
+  }) : []
+
+  const regressionData = corelationPlot ? corelationPlot.X.map((elem,index)=>{
+    return [elem,corelationPlot.X[index]]
+  }) : []
+
+  const regressionLine = corelationPlot ? `Regression Line:  Y = ${corelationPlot.slope.map(function(coeff,i){return coeff+"x"+(i+1)}).join("+")} X+${corelationPlot.intercept.toFixed(2)}` : []
+
+  const optionsCorelation = {
+    chart:{
+      
+      marginTop: 48
+    },
+    title:{
+      text : undefined
+    },
+         
+    series: [{
+      type: 'scatter',
+      name: 'Data',
+      data: corelationData,
+      marker: {
+          radius: 4
+      }
+    },
+    {
+      type: 'line',
+      name: regressionLine,
+      data: regressionData,
+      lineWidth : 3
+    }
+  ],
+  legend:{
+    enabled:false
+  }
+    
+  }
+
   return (
     <Layout>
       <div>
@@ -249,16 +467,17 @@ function Tabel() {
             </div>
             
             <div class="flex w-full overflow-x-auto max-h-[70vh] overflow-y-auto">
-              <table class="table  table-zebra table-compact">
+              <table class="table table-zebra table-compact">
                 <thead className='sticky top-0 z-10'>
                   <tr className=''>
-                    <th className='sticky left-0 z-20 min-w-[320px]' rowSpan={2}>Keterangan</th>
+                    <th className='md:sticky md:left-0 z-20 min-w-[320px] text-xs' rowSpan={2}>Keterangan</th>
                     {data && data.columns && (
                       <>
                         {Array.from(Array(Math.ceil(data.columns.length / type)).keys()).map((index) => {
                           const year = 2010 + index;
+                          yearArray.push(year)
                           return (
-                            <th className='border z-0 left-[320px] sticky' key={year} colSpan={type}>{year}</th>
+                            <th className='border z-0 md:left-[320px] sticky left-0' key={year} colSpan={type}>{year}</th>
                           )
                         })}
                       </>
@@ -281,7 +500,7 @@ function Tabel() {
                   {data.index.map((item,index)=>{
                     return(
                       <tr key={index}>
-                        <th title={item} className='sticky left-0 bg-gray-100 max-w-xs whitespace-nowrap overflow-ellipsis overflow-hidden'>{item}</th>
+                        <th title={item} className='md:sticky left-0 light: bg-white dark:bg-[#161616] max-w-xs whitespace-nowrap overflow-ellipsis overflow-hidden'>{item}</th>
                         {data.data[index].map((data, dataIndex)=>{
                           return(<td>{data}</td>)
                           
@@ -300,16 +519,16 @@ function Tabel() {
               <div className='card min-w-full p-2'>
                 <div className="tabs tabs-underline">
                   <input type="radio" id="tab-6" name="tab-3" className="tab-toggle" defaultChecked onChange={()=>setActiveTab('tab-6')}/>
-                  <label htmlFor="tab-6" className="tab px-6">Chart</label>
+                  <label htmlFor="tab-6" className="tab px-6">Descriptive Analysis (Chart)</label>
 
                   <input type="radio" id="tab-7" name="tab-3" className="tab-toggle" onChange={()=>setActiveTab('tab-7')}/>
-                  <label htmlFor="tab-7" className="tab px-6">Basic Statistic</label>
+                  <label htmlFor="tab-7" className="tab px-6">Descriptive Analysis (Basic Statistic)</label>
 
                   <input type="radio" id="tab-8" name="tab-3" className="tab-toggle" onChange={()=>setActiveTab('tab-8')}/>
-                  <label htmlFor="tab-8" className="tab px-6">Forecasting</label>
+                  <label htmlFor="tab-8" className="tab px-6">Predictive Analysis</label>
 
                   <input type="radio" id="tab-9" name="tab-3" className="tab-toggle" onChange={()=>setActiveTab('tab-9')}/>
-                  <label htmlFor="tab-9" className="tab px-6">Correlation Between Variable</label>
+                  <label htmlFor="tab-9" className="tab px-6">Prescriptive Analysis</label>
                 </div>
 
                 <div className='px-4 pb-4'>
@@ -387,10 +606,10 @@ function Tabel() {
                     <div className='flex flex-col gap-y-4'>
                       <div className='flex flex-col gap-2 pt-4'>
                         <div className='flex gap-4 items-center'>
-                          <p className='text-md font-bold'>Basic Statistic</p>
+                          <p className='text-md font-bold'>Descriptive Analysis</p>
                           <input type="checkbox" id="drawer-right" className="drawer-toggle" />
 
-                          <label htmlFor="drawer-right" className="btn btn-primary btn-sm">Pilih parameter</label>
+                          <label htmlFor="drawer-right" className="btn btn-primary btn-sm">{statCheck ? data.index[statCheck] : 'Pilih parameter'}</label>
                           <label className="overlay " htmlFor="drawer-right"></label>
                           <div className="drawer drawer-right ">
                             <div className="drawer-content pt-10 flex flex-col h-full ">
@@ -412,13 +631,36 @@ function Tabel() {
                                 </div>
                               </div>
                               <div className="h-full flex flex-row justify-end items-end gap-2">
-                              <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" onClick={handleStatCheck}>Pilih</label>
-                                
+                                <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" >Pilih</label>
+                                  
                               </div>
+                              
                             </div>
                           </div>
                         </div>
-                        <p className='text-sm font-light'>Melihat statistik dari dari<span className='mx-2 text-sky-500'>{statTitle}</span></p>
+                        <div className='flex gap-2 items-center'>
+                            <p className='text-sm'>Pilih periode :</p>
+                            <select className="select select-ghost-primary select-md md:max-w-[10%]">
+                              {yearArray.map((year)=>{
+                                  return <option onClick={handleStatFrom} data-key={year}>{year}</option>
+                                })
+
+                                }
+                            </select>
+                            <p className='text-sm'>sampai</p>
+                            <select className="select select-ghost-primary select-md md:max-w-[10%]" >
+                              {yearArray.map((year)=>{
+                                  return <option onClick={handleStatTo} data-key={year}>{year}</option>
+                                })
+
+                              }
+                              
+                            </select>
+                            
+                        </div>
+                         <div>
+                          <div className='btn btn-primary btn-sm' onClick={handleStatCheck}>Lihat Hasil</div>
+                         </div>
                         <div className='grid grid-cols-2 mt-4 gap-y-2'>
                           <div className='flex items-center  gap-x-2'>
                             <p className='text-sm min-w-[20%]'>Mean </p>
@@ -454,6 +696,11 @@ function Tabel() {
                             <p className='text-sm max-w-[20%]'>Standard Deviation </p>
                             <input className="input " value={statItems.standardDeviation} disabled />
                           </div>
+
+                          <div className='flex items-center  gap-x-2'>
+                            <p className='text-sm max-w-[20%]'>Coefficient of Variation </p>
+                            <input className="input " value={statItems.coefVariation} disabled />
+                          </div>
                         </div>
                       </div> 
                     </div>
@@ -463,10 +710,11 @@ function Tabel() {
                     <div className='flex flex-col gap-y-4'>
                       <div className='flex flex-col gap-2 pt-4'>
                         <div className='flex gap-4 items-center'>
-                          <p className='text-md font-bold'>Prediksi menggunakan regresi linear</p>
+                          <p className='text-md font-bold'>Predictive Analysis</p>
                           <input type="checkbox" id="drawer-right" className="drawer-toggle" />
 
-                          <label htmlFor="drawer-right" className="btn btn-primary btn-sm">Pilih parameter</label>
+                          <label htmlFor="drawer-right" className="btn btn-primary btn-sm">{forecastCheck? data.index[forecastCheck] : 'Pilih parameter'}</label>
+                          {forecastCheck? <div className='btn btn-outline-primary btn-sm'>Seasonal Decomposition </div>: <div></div>}
                           <label className="overlay " htmlFor="drawer-right"></label>
                           <div className="drawer drawer-right ">
                             <div className="drawer-content pt-10 flex flex-col h-full ">
@@ -478,7 +726,7 @@ function Tabel() {
                                   return(
                                     <div>
                                       <label className="flex cursor-pointer gap-2 ">
-                                        <input data-key={index} type="radio" class="radio" name="group1" />
+                                        <input data-key={index} onClick={handleForecastCheck} type="radio" class="radio" name="group1" />
                                         
                                         <span className='text-xs'>{item}</span>
                                       </label>
@@ -488,51 +736,144 @@ function Tabel() {
                                 </div>
                               </div>
                               <div className="h-full flex flex-row justify-end items-end gap-2">
-                              <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" >Pilih</label>
+                              <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" onClick={handleForecastVar}>Pilih</label>
                                 
                               </div>
                             </div>
                           </div>
+                          {forecastLoad===false ? <div className="spinner-simple spinner-xs"></div> : <div></div> }
+                          
                         </div>
                         
                       </div> 
+                      <div>
+                            <HighchartsReact
+                            highcharts={Highcharts}
+                            options={optionsForecast}
+                            modules={['exporting']}/>
+                            
+                          </div>
+
+                        {forecastPlot ? <div className=' space-y-2'>
+                          <div className="text-sm">RMSE : {forecastPlot.rmse}</div>
+                          <div className="text-sm">Slope : {forecastPlot.slope}</div>
+                          <div className="text-sm">Intercept : {forecastPlot.intercept}</div>
+                  
+                        </div> : <div></div> }
                     </div>
                   }
 
-                  {activeTab=='tab-8' &&
+                  {activeTab=='tab-9' &&
                     <div className='flex flex-col gap-y-4'>
                       <div className='flex flex-col gap-2 pt-4'>
-                        <div className='flex gap-4 items-center'>
-                          <p className='text-md font-bold'>Prediksi menggunakan regresi linear</p>
-                          <input type="checkbox" id="drawer-right" className="drawer-toggle" />
+                        <div className='flex flex-col gap-4 '>
+                          <p className='text-md font-bold'>Prescriptive Analysis</p>
+                          <div className='flex gap-x-2 items-center'>
+                            <p className='text-sm'>Independet Variable :</p>
 
-                          <label htmlFor="drawer-right" className="btn btn-primary btn-sm">Pilih parameter</label>
-                          <label className="overlay " htmlFor="drawer-right"></label>
-                          <div className="drawer drawer-right ">
-                            <div className="drawer-content pt-10 flex flex-col h-full ">
-                              <label htmlFor="drawer-right" className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</label>
-                              <div>
-                                <h2 className="text-xl font-medium">Pilih parameter</h2>
-                                <div id='group1' className='pt-8 flex flex-col gap-4 max-h-[80vh] overflow-hidden hover:overflow-auto'>
-                                  {data.index.map((item,index)=>{
-                                  return(
-                                    <div>
-                                      <label className="flex cursor-pointer gap-2 ">
-                                        <input data-key={index} type="radio" class="radio" name="group1" />
-                                        
-                                        <span className='text-xs'>{item}</span>
-                                      </label>
-                                    </div>
-                                  )
-                                })}   
+                            <input type="checkbox" id="drawer-right" className="drawer-toggle" />
+
+                            <label htmlFor="drawer-right" className="btn btn-primary btn-sm">{independetVar ? independetVar.length + ' selected' : 'Pilih parameter'}</label>
+                      
+                            <label className="overlay " htmlFor="drawer-right"></label>
+                            <div className="drawer drawer-right ">
+                              <div className="drawer-content pt-10 flex flex-col h-full ">
+                                <label htmlFor="drawer-right" className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</label>
+                                <div>
+                                  <h2 className="text-xl font-medium">Pilih Variable</h2>
+                                  <div id='options-1' className='pt-8 flex flex-col gap-4 max-h-[80vh] overflow-hidden hover:overflow-auto'>
+                                    {data.index.map((item,index)=>{
+                                    return(
+                                      <div>
+                                        <label className="flex cursor-pointer gap-2 ">
+                                          <input data-key={index} onClick={handleIndependent} type="checkbox" class="checkbox" name="options-1" />
+                                          
+                                          <span className='text-xs'>{item}</span>
+                                        </label>
+                                      </div>
+                                    )
+                                  })}   
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="h-full flex flex-row justify-end items-end gap-2">
-                              <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" >Pilih</label>
-                                
+                                <div className="h-full flex flex-row justify-end items-end gap-2">
+                                <label htmlFor="drawer-right" className="btn btn-sm btn-block btn-primary" onClick={handleIndependentItems}>Pilih</label>
+                                  
+                                </div>
                               </div>
                             </div>
                           </div>
+
+                          <div className='flex gap-x-2 items-center'>
+                            <p className='text-sm'>Dependent Variable :</p>
+
+                            <input type="checkbox" id="drawer-right-2" className="drawer-toggle" />
+
+                            <label htmlFor="drawer-right-2" className="btn btn-primary btn-sm">{dependetVar ? data.index[dependetVar] : 'Pilih parameter'}</label>
+                            <label className="overlay " htmlFor="drawer-right-2"></label>
+                            <div className="drawer drawer-right ">
+                              <div className="drawer-content pt-10 flex flex-col h-full ">
+                                <label htmlFor="drawer-right-2" className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</label>
+                                <div>
+                                  <h2 className="text-xl font-medium">Pilih Variabel</h2>
+                                  <div id='options-2' className='pt-8 flex flex-col gap-4 max-h-[80vh] overflow-hidden hover:overflow-auto'>
+                                    {data.index.map((item,index)=>{
+                                    return(
+                                      <div>
+                                        <label className="flex cursor-pointer gap-2 ">
+                                          <input data-key={index} onClick={handleDependent} type="radio" class="radio" name="options-2" />
+                                          
+                                          <span className='text-xs'>{item}</span>
+                                        </label>
+                                      </div>
+                                    )
+                                  })}   
+                                  </div>
+                                </div>
+                                <div className="h-full flex flex-row justify-end items-end gap-2">
+                                <label htmlFor="drawer-right-2" className="btn btn-sm btn-block btn-primary" onClick={handleDependentItems}>Pilih</label>
+                                  
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className='flex gap-2 items-center'>
+                            <p className='text-sm'>Pilih periode :</p>
+                            <select className="select select-ghost-primary select-md md:max-w-[10%]">
+                              {yearArray.map((year)=>{
+                                  return <option onClick={handleYearFrom} data-key={year}>{year}</option>
+                                })
+
+                                }
+                            </select>
+                            <p className='text-sm'>sampai</p>
+                            <select className="select select-ghost-primary select-md md:max-w-[10%]" >
+                              {yearArray.map((year)=>{
+                                  return <option onClick={handleYearTo} data-key={year}>{year}</option>
+                                })
+
+                              }
+                              
+                            </select>
+                          </div>
+
+                          <div className='flex gap-2 items-center'>
+                            <button className='btn btn-primary' onClick={handleHasil}>Lihat Hasil</button>
+                            {corelationLoad===false ? <div className="spinner-simple spinner-xs"></div> : <div></div> }
+                          </div>
+                          <div>
+                            <HighchartsReact
+                            highcharts={Highcharts}
+                            options={optionsCorelation}
+                            />
+                            
+                          </div>
+                          {corelationPlot ? <div className='space-y-2'>
+                            <div className="text-sm">RMSE : {corelationPlot.rmse}</div> 
+                            <div className="text-sm">Slope : {corelationPlot.slope.join(" , ")}</div> 
+                            <div className="text-sm">Intercept : {corelationPlot.intercept}</div> 
+                          </div> : <div></div> }
+                          
                         </div>
                         
                       </div> 
@@ -544,7 +885,8 @@ function Tabel() {
 
               </div>
             </div>
-            <button className='btn' onClick={()=>{console.log(calculateStatistics(data.data[0]))}}>tes </button>
+            <button className='btn' onClick={()=>{console.log(corelationPlot)}}>tes </button>
+            
           </div>
         )}
       </div>

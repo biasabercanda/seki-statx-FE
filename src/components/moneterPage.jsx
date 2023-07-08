@@ -9,23 +9,23 @@ function MoneterPage() {
 
   return (
       <div className=''>
-          <p className='font-bold text-4xl'>Sektor Moneter</p>
-          <div className='mt-8'>
-            <p className='font-semibold'>Uang dan Bank</p>
-            <div className='py-4 flex flex-col gap-4'>
-              <Item items={uangDanBank}></Item>            
-            </div>
-            
+        <p className='font-bold text-4xl'>Sektor Moneter</p>
+        <div className='mt-8'>
+          <p className='font-semibold'>Uang dan Bank</p>
+          <div className='py-4 flex flex-col gap-4'>
+            <Item items={uangDanBank}></Item>            
           </div>
-
-          <div className='mt-8'>
-            <p className='font-semibold'>Kegiatan Usaha Lembaga Keuangan Non Bank</p>
-            <div className='py-4 flex flex-col gap-4 text-left'>
-              <Item items={nonBank}></Item>            
-            </div>
-            
-          </div>
+          
         </div>
+
+        <div className='mt-8'>
+          <p className='font-semibold'>Kegiatan Usaha Lembaga Keuangan Non Bank</p>
+          <div className='py-4 flex flex-col gap-4 text-left'>
+            <Item items={nonBank}></Item>            
+          </div>
+          
+        </div>
+      </div>
     
   )
 }

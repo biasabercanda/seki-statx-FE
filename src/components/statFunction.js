@@ -25,6 +25,10 @@ export function calculateStatistics(data) {
     // Maximum and Minimum Values
     const maxValue = Math.max(...data);
     const minValue = Math.min(...data);
+
+    const coefVariation = (standardDeviation/mean)*100
+
+    
   
     return {
       mean,
@@ -34,6 +38,7 @@ export function calculateStatistics(data) {
       standardDeviation,
       maxValue,
       minValue,
+      coefVariation
     };
   }
   
