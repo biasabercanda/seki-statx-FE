@@ -69,8 +69,6 @@ function Tabel() {
       .then(response => {
         let parsedData = JSON.parse(response.data)
         setData(parsedData);
-        console.log(parsedData)
-
         if (parsedData.columns[0].includes("Jan")) {
           setType(12);
         } else {
@@ -885,8 +883,7 @@ function Tabel() {
 
               </div>
             </div>
-            <button className='btn' onClick={()=>{console.log(corelationPlot)}}>tes </button>
-            
+          
           </div>
         )}
       </div>
